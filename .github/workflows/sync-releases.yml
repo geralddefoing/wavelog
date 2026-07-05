@@ -1,0 +1,50 @@
+name: Sync WaveLog Upstream
+
+on:
+  schedule:
+    - cron: '0 4 * * *'   # Vérification tous les jours à 04:00 UTC
+  workflow_dispatch:      # Permet un lancement manuel
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Add upstream
+        run: |
+          git remote add upstream https://github.com/wavelog/wavelog.git
+          git fetch upstream --tags
+
+      - name: Check for new release
+        id: check
+        run: |
+          LOCAL_TAG=$(git describe --tags origin/master 2>/dev/null || echo "none")
+          REMOTE_TAG=$(git describe --tags upstream/master)
+
+          echo "Local tag : $LOCAL_TAG"
+          echo "Remote tag: $REMOTE_TAG"
+
+          if [ "$LOCAL_TAG" = "$REMOTE_TAG" ]; then
+            echo "update=false" >> $GITHUB_OUTPUT
+          else
+            echo "update=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Merge upstream
+        if: steps.check.outputs.update == 'true'
+        run: |
+          git merge upstream/master --no-edit
+          git push origin master
