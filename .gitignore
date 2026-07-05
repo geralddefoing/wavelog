@@ -38,3 +38,10 @@ docker-compose.yml
 .htaccess
 .user.ini
 .env
+# Configuration locale
+application/config/database.php
+application/config/config.php
+
+# Données utilisateur
+uploads/
+backup/
